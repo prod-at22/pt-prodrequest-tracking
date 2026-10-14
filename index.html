@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="ms"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prod Request Tracking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400&display=swap" rel="stylesheet">
+<style>
+:root{--font-anthropic-sans:Inter,system-ui,sans-serif;--font-anthropic-serif:"Source Serif 4",Georgia,serif;
+--color-fg:#1f1e1d;--color-fg-muted:#6b6a66;--color-bg:#faf9f5;--color-panel:#ffffff;--color-border-line:#e5e3dc;
+--color-ok:#2f9e5b;--color-warn:#b7791f;--color-bad:#d64545;
+--cds-font-size-caption:12.5px;--cds-font-size-body:14.5px;--cds-font-size-heading:16px;--cds-font-size-title:30px;--cds-font-weight-medium:600;
+--cds-gap-xs:4px;--cds-gap-sm:8px;--cds-gap-md:12px;--cds-gap-lg:20px;--cds-pad-xs:4px;--cds-pad-sm:8px;--cds-pad-md:12px;--cds-pad-lg:16px;--cds-radius:10px;
+--cds-chart-muted:#e8e6df;--cds-chart-status-critical:#d64545;--cds-surface-popover:#fff;--cds-border:#e5e3dc;--cds-shadow-popover:0 4px 16px rgba(0,0,0,.12);--cds-text-secondary:#6b6a66;--cds-dur-slow:.3s}
+@media (prefers-color-scheme:dark){:root{--color-fg:#ece9e1;--color-fg-muted:#a29f97;--color-bg:#1c1b19;--color-panel:#262522;--color-border-line:#3a3935;--color-ok:#4cc27b;--color-warn:#e0a83a;--color-bad:#f06b6b;--cds-chart-muted:#3a3935;--cds-surface-popover:#262522;--cds-border:#3a3935;--cds-text-secondary:#a29f97}}
+html,body{margin:0;background:var(--color-bg);color:var(--color-fg)}
+body{padding:24px 16px 48px}
+.dash-skeleton{color:transparent!important;background:var(--cds-chart-muted);border-radius:6px;display:inline-block;min-width:3em}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+(function(){
+  const RAW = {"requests": [{"id": "R01", "batch": "Baru", "requested": "2026-10-03 10:20", "tc": "Aqilah", "po": "Farah Ilyana", "country": "China", "destination": "Yunnan 3 Wilayah 6D5N", "type": "Availability", "pax": 2, "travel": "26–31 Okt 2026", "status": "Answered", "responded": "2026-10-03 15:32", "tat_hours": 5.2, "note": "", "tat_minutes": 312, "dest": "Yunnan", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-03 10:20"}, {"id": "R02", "batch": "Baru", "requested": "2026-10-03 10:36", "tc": "Aqilah", "po": "Fyka", "country": "China", "destination": "Shanghai 5D4N", "type": "Quotation", "pax": 12, "travel": "24–28 Dis 2026", "status": "Quoted", "responded": "2026-10-06 10:09", "tat_hours": 71.5, "note": "", "tat_minutes": 4293, "dest": "Shanghai", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-03 10:36"}, {"id": "R03", "batch": "Baru", "requested": "2026-10-04 11:02", "tc": "Ahmad Suaidi", "po": "Fyka", "country": "China", "destination": "Chengdu 7D6N", "type": "Quotation", "pax": 9, "travel": "23–29 Dis 2026", "status": "Quoted", "responded": "2026-10-05 10:30", "tat_hours": 23.5, "note": "Harga sama dengan quote Shanghai Disneyland (3,557/3,457/3,357), perlu semak", "tat_minutes": 1408, "dest": "Chengdu", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-04 11:02"}, {"id": "R04", "batch": "Baru", "requested": "2026-10-04 19:03", "tc": "Aqilah", "po": "Fyka", "country": "China", "destination": "Shanghai Disneyland 6D4N", "type": "Quotation", "pax": 7, "travel": "Dis 2026", "status": "Quoted", "responded": "2026-10-05 09:58", "tat_hours": 14.9, "note": "", "tat_minutes": 895, "dest": "Shanghai", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-04 19:03"}, {"id": "R05", "batch": "Baru", "requested": "2026-10-04 22:31", "tc": "Farah Faisal", "po": "Thania", "country": "Japan", "destination": "Tokyo Standard + Fuji snow", "type": "Quotation", "pax": 5, "travel": "19–23 Dis 2026", "status": "Quoted", "responded": "2026-10-09 00:13", "tat_hours": 97.7, "note": "Add-on; Thania minta penjelasan 08/10", "tat_minutes": 5862, "dest": "Tokyo", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-04 22:31"}, {"id": "R06", "batch": "Baru", "requested": "2026-10-05 17:36", "tc": "Farah Faisal", "po": "Thania", "country": "Japan", "destination": "Tokyo-Osaka 11D10N", "type": "Quotation", "pax": 15, "travel": "21–31 Dis 2026", "status": "Quoted", "responded": "2026-10-09 01:10", "tat_hours": 79.6, "note": "Harga anggaran (range) sahaja", "tat_minutes": 4774, "dest": "Tokyo-Osaka", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-05 17:36"}, {"id": "R07", "batch": "Baru", "requested": "2026-10-06 06:04", "tc": "Farah Faisal", "po": "Aiman", "country": "Vietnam", "destination": "Hanoi-Sapa", "type": "Quotation", "pax": 3, "travel": "29 Okt–1 Nov 2026", "status": "Pending", "responded": "", "tat_hours": null, "note": "", "tat_minutes": null, "dest": "Hanoi-Sapa", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-06 06:04"}, {"id": "R08", "batch": "Baru", "requested": "2026-10-06 10:07", "tc": "Farah Faisal", "po": "Thania", "country": "Japan", "destination": "Osaka 6D5N (custom)", "type": "Quotation", "pax": 4, "travel": "22–27 Dis 2026", "status": "Quoted", "responded": "2026-10-09 00:34", "tat_hours": 62.5, "note": "Add-on per pax", "tat_minutes": 3747, "dest": "Osaka", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-06 10:07"}, {"id": "R09", "batch": "Baru", "requested": "2026-10-06 15:32", "tc": "Ashiqin", "po": "Aiman", "country": "Indonesia", "destination": "Jakarta-Bogor 3D2N", "type": "Quotation", "pax": 3, "travel": "5–7 Jul 2027", "status": "Pending", "responded": "", "tat_hours": null, "note": "", "tat_minutes": null, "dest": "Jakarta-Bogor", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-06 15:32"}, {"id": "R10", "batch": "Baru", "requested": "2026-10-06 15:35", "tc": "Syamil", "po": "Fyka", "country": "Malaysia", "destination": "KK Kundasang 4D3N", "type": "Availability", "pax": 4, "travel": "26–29 Dis 2026", "status": "Answered", "responded": "2026-10-06 16:26", "tat_hours": 0.8, "note": "", "tat_minutes": 51, "dest": "Kundasang", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-06 15:35"}, {"id": "R11", "batch": "Baru", "requested": "2026-10-07 00:25", "tc": "Jannah", "po": "Acap", "country": "Turkey", "destination": "Turkey Classic 8D7N", "type": "Quotation", "pax": 17, "travel": "Dis 2027", "status": "Quoted", "responded": "2026-10-07 18:07", "tat_hours": 17.7, "note": "", "tat_minutes": 1062, "dest": "Turkey Classic", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-07 00:25"}, {"id": "R12", "batch": "Baru", "requested": "2026-10-07 10:03", "tc": "Aqilah", "po": "Farah Ilyana", "country": "Vietnam", "destination": "HCM-Dalat", "type": "Availability", "pax": 3, "travel": "16–19 Okt 2026", "status": "Answered", "responded": "2026-10-07 10:34", "tat_hours": 0.5, "note": "", "tat_minutes": 31, "dest": "HCM-Dalat", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-07 10:03"}, {"id": "R13", "batch": "Baru", "requested": "2026-10-07 10:37", "tc": "Farah Faisal", "po": "Aiman", "country": "Korea", "destination": "Seoul Standard 5D4N", "type": "Quotation", "pax": 3, "travel": "12–16 Nov 2026", "status": "Pending", "responded": "", "tat_hours": null, "note": "Seoul di-tag kepada Aiman, semak PO yang betul", "tat_minutes": null, "dest": "Seoul", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-07 10:37"}, {"id": "R14", "batch": "Baru", "requested": "2026-10-07 14:00", "tc": "Farah Faisal", "po": "Iwan (Ops)", "country": "Indonesia", "destination": "Jakarta-Bandung (JBDO)", "type": "Availability", "pax": 6, "travel": "31 Okt–4 Nov 2026", "status": "Answered", "responded": "2026-10-07 14:09", "tat_hours": 0.1, "note": "", "tat_minutes": 9, "dest": "Jakarta-Bandung", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-07 14:00"}, {"id": "R15", "batch": "Baru", "requested": "2026-10-07 15:25", "tc": "Farah Faisal", "po": "Iwan (Ops)", "country": "Indonesia", "destination": "Jakarta-Bandung (JBDO)", "type": "Availability", "pax": 8, "travel": "10–13 Dis 2026", "status": "Answered", "responded": "2026-10-07 15:35", "tat_hours": 0.2, "note": "Customer dah beli flight", "tat_minutes": 10, "dest": "Jakarta-Bandung", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-07 15:25"}, {"id": "R16", "batch": "Baru", "requested": "2026-10-08 13:57", "tc": "Ashiqin", "po": "Ezie", "country": "Indonesia", "destination": "Jakarta-Bandung-Puncak 6D5N", "type": "Quotation", "pax": 2, "travel": "5–10 Dis 2026", "status": "Quoted", "responded": "2026-10-10 08:14", "tat_hours": 42.3, "note": "Revision tanpa hotel; quote keluar 10/10", "tat_minutes": 2537, "dest": "Jakarta-Bandung-Puncak", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-08 13:57"}, {"id": "R17", "batch": "Baru", "requested": "2026-10-08 16:18", "tc": "Ashiqin", "po": "Acap", "country": "Maldives", "destination": "Maldives Combo Island", "type": "Quotation", "pax": 5, "travel": "25–28 Dis 2026", "status": "Pending", "responded": "", "tat_hours": null, "note": "Acap: semak dengan TO (09/10)", "tat_minutes": null, "dest": "Maldives", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-08 16:18"}, {"id": "R18", "batch": "Baru", "requested": "2026-10-08 22:12", "tc": "Ashiqin", "po": "Aiman", "country": "Vietnam", "destination": "HCM 3D2N", "type": "Quotation", "pax": 5, "travel": "25–27 Dis 2026", "status": "Pending", "responded": "", "tat_hours": null, "note": "", "tat_minutes": null, "dest": "HCM", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-08 22:12"}, {"id": "R19", "batch": "Baru", "requested": "2026-10-09 16:31", "tc": "Ashiqin", "po": "Farah Ilyana", "country": "Vietnam", "destination": "Hanoi-Sapa-Halong 5D4N", "type": "Availability", "pax": 4, "travel": "27–31 Okt 2026", "status": "Answered", "responded": "2026-10-09 16:57", "tat_hours": 0.4, "note": "FP dijanji Isnin 12/10", "tat_minutes": 26, "dest": "Hanoi-Sapa-Halong", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-09 16:31"}, {"id": "R20", "batch": "Baru", "requested": "2026-10-09 20:17", "tc": "Ashiqin", "po": "Thania", "country": "Japan", "destination": "Tokyo Basic 7D6N", "type": "Quotation", "pax": 4, "travel": "28 Dis–3 Jan", "status": "Pending", "responded": "", "tat_hours": null, "note": "Thania tanya pax 10/10", "tat_minutes": null, "dest": "Tokyo", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-09 20:17"}, {"id": "K01", "batch": "Carry-over", "requested": "", "tc": "Farah Faisal", "po": "Ezie", "country": "Japan", "destination": "Kyoto-Fuji-Tokyo 14D13N", "type": "Quotation", "pax": 3, "travel": "19 Nov–2 Dis 2026", "status": "Quoted", "responded": "2026-10-05 09:42", "tat_hours": null, "note": "", "tat_minutes": null, "dest": "Kyoto-Fuji-Tokyo", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": ""}, {"id": "K02", "batch": "Carry-over", "requested": "", "tc": "Ashiqin", "po": "Aiman", "country": "Vietnam", "destination": "Nha Trang-Dalat 5D4N", "type": "Quotation", "pax": 10, "travel": "5–9 Dis 2026", "status": "Quoted", "responded": "2026-10-05 11:12", "tat_hours": null, "note": "", "tat_minutes": null, "dest": "Nha Trang-Dalat", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": ""}, {"id": "K03", "batch": "Carry-over", "requested": "", "tc": "Jannah", "po": "Aiman", "country": "Indonesia", "destination": "Surabaya-Bromo-Malang", "type": "Quotation", "pax": 6, "travel": "20–25 Nov 2026", "status": "Quoted", "responded": "2026-10-05 11:47", "tat_hours": null, "note": "", "tat_minutes": null, "dest": "Surabaya-Bromo-Malang", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": ""}, {"id": "K04", "batch": "Carry-over", "requested": "", "tc": "Farah", "po": "Thania", "country": "Japan", "destination": "Gala Yuzawa transport", "type": "Quotation", "pax": 6, "travel": "-", "status": "Quoted", "responded": "2026-10-05 11:55", "tat_hours": null, "note": "", "tat_minutes": null, "dest": "Gala Yuzawa", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": ""}, {"id": "K05", "batch": "Carry-over", "requested": "", "tc": "Farah Faisal", "po": "Ezie", "country": "Turkey", "destination": "Istanbul-Cappadocia-Bursa", "type": "Quotation", "pax": 2, "travel": "15–24 Jan 2027", "status": "Quoted", "responded": "2026-10-06 21:43", "tat_hours": null, "note": "Ezie cover semasa Acap jadi TL", "tat_minutes": null, "dest": "Istanbul-Cappadocia-Bursa", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": ""}, {"id": "K06", "batch": "Carry-over", "requested": "2026-10-05 17:32", "tc": "Farah Faisal", "po": "Fyka", "country": "Tidak dinyatakan", "destination": "PR takeover (34 pax)", "type": "Quotation", "pax": 34, "travel": "-", "status": "Quoted", "responded": "2026-10-07 13:06", "tat_hours": 43.6, "note": "Fyka ambil alih daripada Ezie", "tat_minutes": 2614, "dest": "Tidak dinyatakan", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": "2026-10-05 17:32"}, {"id": "K07", "batch": "Carry-over", "requested": "", "tc": "Jannah", "po": "Thania", "country": "Japan", "destination": "Tokyo-Osaka 6D5N", "type": "Quotation", "pax": 7, "travel": "Tiada tarikh", "status": "Quoted", "responded": "2026-10-08 14:10", "tat_hours": null, "note": "", "tat_minutes": null, "dest": "Tokyo-Osaka", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": ""}, {"id": "K08", "batch": "Carry-over", "requested": "", "tc": "Jannah", "po": "Aiman", "country": "Indonesia", "destination": "Jakarta-Bandung 8D7N", "type": "Quotation", "pax": 2, "travel": "12–19 Jan 2027", "status": "Pending", "responded": "", "tat_hours": null, "note": "Dikejar 05/10", "tat_minutes": null, "dest": "Jakarta-Bandung", "week_end": "2026-10-09 23:59", "asof": "2026-10-11 20:30", "start": ""}], "requests_w2": [{"id": "W01", "batch": "Baru", "requested": "2026-10-10 01:37", "tc": "Jannah", "po": "Fyka", "country": "Indonesia", "dest": "Padang-Bukittinggi", "destination": "Padang-Bukittinggi 4D3N + add-on 1D1N", "type": "Quotation", "pax": 5, "travel": "22–25 Dis 2026", "status": "Quoted", "responded": "2026-10-13 13:57", "tat_hours": 84.3, "tat_minutes": null, "note": "Fyka: add RM250/pax (13/10). Andaian: reply ni untuk add-on Padang", "week_end": "2026-10-16 23:59", "start": "2026-10-10 01:37", "asof": "2026-10-14 10:18"}, {"id": "W02", "batch": "Baru", "requested": "2026-10-10 16:43", "tc": "Jannah", "po": "Aiman", "country": "Indonesia", "dest": "Lombok", "destination": "Lombok 4D3N (tukar day 3)", "type": "Quotation", "pax": 2, "travel": "20–23 Nov 2026", "status": "Quoted", "responded": "2026-10-12 10:53", "tat_hours": 42.2, "tat_minutes": 2530, "note": "Tambahan RM80/pax", "week_end": "2026-10-16 23:59", "start": "2026-10-10 16:43", "asof": "2026-10-14 10:18"}, {"id": "W03", "batch": "Baru", "requested": "2026-10-10 16:46", "tc": "Jannah", "po": "Thania", "country": "Europe", "dest": "Swiss-Italy", "destination": "Swiss-Italy (harga 2027)", "type": "Quotation", "pax": 12, "travel": "Okt 2027", "status": "Pending", "responded": "", "tat_hours": null, "tat_minutes": null, "note": "Harga 2027 belum ada; Ezie: cost projection atau close + surcharge. Thania jadi TL", "week_end": "2026-10-16 23:59", "start": "2026-10-10 16:46", "asof": "2026-10-14 10:18"}, {"id": "W04", "batch": "Baru", "requested": "2026-10-10 19:54", "tc": "Jannah", "po": "Acap", "country": "Turkey", "dest": "Istanbul-Bursa", "destination": "Istanbul-Bursa 9D8N", "type": "Quotation", "pax": 21, "travel": "Dis 2027", "status": "Pending", "responded": "", "tat_hours": null, "tat_minutes": null, "note": "Acap tanya jenis transport (12/10)", "week_end": "2026-10-16 23:59", "start": "2026-10-10 19:54", "asof": "2026-10-14 10:18"}, {"id": "W05", "batch": "Baru", "requested": "2026-10-10 20:16", "tc": "Farah", "po": "Amirul", "country": "China", "dest": "Kunming-Dali-Lijiang", "destination": "Kunming-Dali-Lijiang 8D7N", "type": "Quotation", "pax": 26, "travel": "15–22 Mei 2027", "status": "Quoted", "responded": "2026-10-12 10:27", "tat_hours": 38.2, "tat_minutes": 2291, "note": "Asal tag Fyka (silap PO), Amirul ambil alih", "week_end": "2026-10-16 23:59", "start": "2026-10-10 20:16", "asof": "2026-10-14 10:18"}, {"id": "W06", "batch": "Baru", "requested": "2026-10-10 20:17", "tc": "Jannah", "po": "Ezie", "country": "Japan", "dest": "Tokyo", "destination": "Tokyo Standard 5D4N (apartment)", "type": "Quotation", "pax": 8, "travel": "9–13 Dis 2026", "status": "Quoted", "responded": "2026-10-13 14:50", "tat_hours": 66.5, "tat_minutes": null, "note": "Asal tag Thania (jadi TL); Ezie jawab: boleh guna harga katalog, 2 unit di lokasi berbeza", "week_end": "2026-10-16 23:59", "start": "2026-10-10 20:17", "asof": "2026-10-14 10:18"}, {"id": "W07", "batch": "Baru", "requested": "2026-10-10 20:36", "tc": "Jannah", "po": "Aiman", "country": "Korea", "dest": "Seoul", "destination": "Seoul Standard 5D4N", "type": "Quotation", "pax": 4, "travel": "4–8 Apr 2027", "status": "Quoted", "responded": "2026-10-13 10:36", "tat_hours": 62.0, "tat_minutes": null, "note": "Boleh diskaun RM200/pax lagi", "week_end": "2026-10-16 23:59", "start": "2026-10-10 20:36", "asof": "2026-10-14 10:18"}, {"id": "W08", "batch": "Baru", "requested": "2026-10-10 22:16", "tc": "Ashiqin", "po": "Thania", "country": "Japan", "dest": "Tokyo-Kyoto-Osaka", "destination": "Tokyo-Kyoto-Osaka 11D10N", "type": "Quotation", "pax": 10, "travel": "5–15 Dis 2026", "status": "Pending", "responded": "", "tat_hours": null, "tat_minutes": null, "note": "Thania jadi TL, belum ada cover", "week_end": "2026-10-16 23:59", "start": "2026-10-10 22:16", "asof": "2026-10-14 10:18"}, {"id": "W09", "batch": "Baru", "requested": "2026-10-10 22:23", "tc": "Ashiqin", "po": "Aiman", "country": "Vietnam", "dest": "Hanoi-Sapa-Halong", "destination": "Hanoi-Sapa-Halong 7D6N", "type": "Quotation", "pax": 10, "travel": "16–22 Dis 2026", "status": "Pending", "responded": "", "tat_hours": null, "tat_minutes": null, "note": "", "week_end": "2026-10-16 23:59", "start": "2026-10-10 22:23", "asof": "2026-10-14 10:18"}, {"id": "W10", "batch": "Baru", "requested": "2026-10-11 19:45", "tc": "Jannah", "po": "Acap", "country": "Turkey", "dest": "Turkey Classic", "destination": "Turkey (tambah 1 TL)", "type": "Quotation", "pax": null, "travel": "-", "status": "Quoted", "responded": "2026-10-12 10:21", "tat_hours": 14.6, "tat_minutes": 876, "note": "Tambah RM600/pax", "week_end": "2026-10-16 23:59", "start": "2026-10-11 19:45", "asof": "2026-10-14 10:18"}, {"id": "W11", "batch": "Baru", "requested": "2026-10-11 19:55", "tc": "Jannah", "po": "Fyka", "country": "China", "dest": "Xi'an", "destination": "Xi'an 5D3N", "type": "Quotation", "pax": 9, "travel": "9–13 Mac 2027", "status": "Quoted", "responded": "2026-10-12 11:20", "tat_hours": 15.4, "tat_minutes": 925, "note": "", "week_end": "2026-10-16 23:59", "start": "2026-10-11 19:55", "asof": "2026-10-14 10:18"}, {"id": "W12", "batch": "Baru", "requested": "2026-10-12 00:59", "tc": "Jannah", "po": "Aiman", "country": "Indonesia", "dest": "Surabaya-Bromo-Malang", "destination": "Surabaya-Bromo-Malang (ubah itinerary)", "type": "Quotation", "pax": 6, "travel": "20–25 Nov 2026", "status": "Pending", "responded": "", "tat_hours": null, "tat_minutes": null, "note": "Aiman minta penjelasan; customer nak jawapan hari ni", "week_end": "2026-10-16 23:59", "start": "2026-10-12 00:59", "asof": "2026-10-14 10:18"}, {"id": "W13", "batch": "Baru", "requested": "2026-10-10 12:06", "tc": "Ashiqin", "po": "Farah Ilyana", "country": "Vietnam", "dest": "Hanoi-Sapa-Halong", "destination": "Hanoi-Sapa-Halong 5D4N (tukar tarikh)", "type": "Availability", "pax": 4, "travel": "28 Okt–1 Nov 2026", "status": "Answered", "responded": "2026-10-10 16:16", "tat_hours": 4.2, "tat_minutes": 250, "note": "FP dijanji Isnin", "week_end": "2026-10-16 23:59", "start": "2026-10-10 12:06", "asof": "2026-10-14 10:18"}, {"id": "W14", "batch": "Baru", "requested": "2026-10-12 10:46", "tc": "Jannah", "po": "Farah Ilyana", "country": "Japan", "dest": "Tokyo", "destination": "Tokyo BSC 5D4N", "type": "Availability", "pax": 3, "travel": "7–11 Nov 2026", "status": "Pending", "responded": "", "tat_hours": null, "tat_minutes": null, "note": "", "week_end": "2026-10-16 23:59", "start": "2026-10-12 10:46", "asof": "2026-10-14 10:18"}, {"id": "W15", "batch": "Baru", "requested": "", "requested_label": "12–13 Okt", "start": "2026-10-13 09:51", "tc": "Hamizah", "po": "Aiman", "country": "Korea", "dest": "Korea", "destination": "Korea 7D (7–13 Apr 2027)", "type": "Quotation", "pax": null, "travel": "7–13 Apr 2027", "status": "Pending", "responded": "", "note": "Aiman minta detail flight & D/N (13/10 11:03); Hamizah tengah dapatkan detail customer", "tat_hours": null, "tat_minutes": null, "week_end": "2026-10-16 23:59", "asof": "2026-10-14 10:18"}, {"id": "W16", "batch": "Baru", "requested": "", "requested_label": "12–13 Okt", "start": "", "tc": "Hamizah", "po": "Ezie", "country": "Japan", "dest": "Tokyo-Osaka", "destination": "Tokyo-Osaka 9D8N", "type": "Quotation", "pax": 4, "travel": "8–16 Dis 2026", "status": "Quoted", "responded": "2026-10-13 10:07", "note": "Ezie cover sebab Thania jadi TL", "tat_hours": null, "tat_minutes": null, "week_end": "2026-10-16 23:59", "asof": "2026-10-14 10:18"}, {"id": "W17", "batch": "Baru", "requested": "", "requested_label": "12–13 Okt", "start": "", "tc": "Zaki", "po": "Fyka", "country": "China", "dest": "Chengdu", "destination": "Chengdu-Jiuzhaigou-Xiling 6D5N", "type": "Quotation", "pax": 26, "travel": "30 Dis–4 Jan", "status": "Quoted", "responded": "2026-10-13 10:09", "note": "Zaki tanya tarikh 27 Dis; Fyka: harga sama (13:58)", "tat_hours": null, "tat_minutes": null, "week_end": "2026-10-16 23:59", "asof": "2026-10-14 10:18"}, {"id": "W18", "batch": "Baru", "requested": "", "requested_label": "12–13 Okt", "start": "", "tc": "Farah Faisal", "po": "Fyka", "country": "Tidak dinyatakan", "dest": "Tidak dinyatakan", "destination": "Tidak dinyatakan", "type": "Quotation", "pax": null, "travel": "-", "status": "Quoted", "responded": "2026-10-13 10:13", "note": "Fyka: boleh pakai harga sama, infant FOC", "tat_hours": null, "tat_minutes": null, "week_end": "2026-10-16 23:59", "asof": "2026-10-14 10:18"}, {"id": "W19", "batch": "Baru", "requested": "", "requested_label": "12–13 Okt", "start": "", "tc": "Tidak dinyatakan", "po": "Ezie", "country": "Japan", "dest": "Tokyo-Osaka", "destination": "Tokyo-Osaka 8D7N", "type": "Quotation", "pax": 8, "travel": "Nov 2027", "status": "Quoted", "responded": "2026-10-13 10:44", "note": "Request asal tiada dalam chat yang dihantar", "tat_hours": null, "tat_minutes": null, "week_end": "2026-10-16 23:59", "asof": "2026-10-14 10:18"}, {"id": "W20", "batch": "Baru", "requested": "2026-10-13 10:23", "start": "2026-10-13 10:23", "tc": "Ashiqin", "po": "Aiman", "country": "Vietnam", "dest": "HCM-Dalat-Mui Ne", "destination": "HCM-Dalat-Mui Ne 7D6N", "type": "Quotation", "pax": 10, "travel": "16–22 Dis 2026", "status": "Pending", "responded": "", "note": "Ashiqin jawab in-out HCM naik MAS (13/10 10:48); belum ada harga", "tat_hours": null, "tat_minutes": null, "week_end": "2026-10-16 23:59", "asof": "2026-10-14 10:18"}, {"id": "W21", "batch": "Baru", "requested": "2026-10-13 11:26", "start": "2026-10-13 11:26", "tc": "Farah Faisal", "po": "Fyka", "country": "China", "dest": "Shanghai", "destination": "Shanghai (tolak hotel & meals)", "type": "Quotation", "pax": null, "travel": "-", "status": "Quoted", "responded": "2026-10-13 14:11", "note": "Tolak RM650/pax", "tat_hours": 2.8, "tat_minutes": null, "week_end": "2026-10-16 23:59", "asof": "2026-10-14 10:18"}, {"id": "W22", "batch": "Baru", "requested": "2026-10-13 14:05", "start": "2026-10-13 14:05", "tc": "Jannah", "po": "Fyka", "country": "Indonesia", "dest": "Padang-Bukittinggi", "destination": "Padang-Bukittinggi (tolak hotel 1 malam)", "type": "Quotation", "pax": null, "travel": "-", "status": "Quoted", "responded": "2026-10-14 09:45", "note": "Farah Faisal forward jawapan lama Fyka (tolak RM80/room/night); Fyka sahkan 14/10: boleh tolak 2 malam hotel Padang, tour Bukittinggi tak sesuai kalau tidur Padang", "tat_hours": 19.7, "tat_minutes": null, "week_end": "2026-10-16 23:59", "asof": "2026-10-14 10:18"}, {"id": "W23", "batch": "Baru", "requested": "2026-10-13 14:21", "start": "2026-10-13 14:21", "tc": "Farah Faisal", "po": "Aiman", "country": "Korea", "dest": "Seoul", "destination": "Seoul 5D4N (4 pax, diskaun)", "type": "Quotation", "pax": 4, "travel": "6–10 Nov 2026", "status": "Quoted", "responded": "2026-10-13 16:37", "note": "Aiman: boleh tolak RM500/pax", "tat_hours": 2.3, "tat_minutes": null, "week_end": "2026-10-16 23:59", "asof": "2026-10-14 10:18"}, {"batch": "Baru", "requested": "2026-10-13 15:03", "requested_label": "", "start": "2026-10-13 15:03", "tc": "Ashiqin", "po": "Aiman", "country": "Vietnam", "dest": "HCM-Dalat", "destination": "HCM-Dalat 4D3N", "type": "Quotation", "pax": 3, "travel": "16–19 Dis 2026", "status": "Quoted", "responded": "2026-10-13 16:30", "tat_hours": 1.4, "tat_minutes": null, "note": "Harga default + entrance ~RM40", "week_end": "2026-10-16 23:59", "id": "W24", "asof": "2026-10-14 10:18"}, {"batch": "Baru", "requested": "2026-10-13 15:04", "requested_label": "", "start": "2026-10-13 15:04", "tc": "Aqilah", "po": "Fyka", "country": "China", "dest": "Shanghai", "destination": "Shanghai Disneyland 5D4N", "type": "Quotation", "pax": 15, "travel": "24–28 Dis 2026", "status": "Quoted", "responded": "2026-10-13 15:24", "tat_hours": 0.3, "tat_minutes": null, "note": "\"Pantas macam flash\"", "week_end": "2026-10-16 23:59", "id": "W25", "asof": "2026-10-14 10:18"}, {"batch": "Baru", "requested": "2026-10-13 16:27", "requested_label": "", "start": "2026-10-13 16:27", "tc": "Ashiqin", "po": "Farah Ilyana", "country": "China", "dest": "Yunnan", "destination": "Yunnan 4 Wilayah 7D6N", "type": "Availability", "pax": 2, "travel": "30 Okt–5 Nov 2026", "status": "Answered", "responded": "2026-10-13 18:19", "tat_hours": null, "tat_minutes": 112, "note": "Guide tak banyak, kena close cepat", "week_end": "2026-10-16 23:59", "id": "W26", "asof": "2026-10-14 10:18"}, {"batch": "Baru", "requested": "2026-10-13 17:34", "requested_label": "", "start": "2026-10-13 17:34", "tc": "Ashiqin", "po": "Thania", "country": "Japan", "dest": "Osaka", "destination": "Osaka Standard (Kyoto → Kobe)", "type": "Quotation", "pax": null, "travel": "-", "status": "Pending", "responded": "", "tat_hours": null, "tat_minutes": null, "note": "Ezie: ada perubahan harga, kena PR (14/10). Thania jadi TL", "week_end": "2026-10-16 23:59", "id": "W27", "asof": "2026-10-14 10:18"}, {"batch": "Baru", "requested": "2026-10-14 00:07", "requested_label": "", "start": "2026-10-14 00:07", "tc": "Jannah", "po": "Fyka", "country": "China", "dest": "Chengdu", "destination": "Chengdu-Jiuzhaigou-Huanglong 7D5N", "type": "Quotation", "pax": 10, "travel": "16–22 Nov 2026", "status": "Quoted", "responded": "2026-10-14 10:02", "tat_hours": 9.9, "tat_minutes": null, "note": "Repeat customer", "week_end": "2026-10-16 23:59", "id": "W28", "asof": "2026-10-14 10:18"}, {"batch": "Baru", "requested": "2026-10-14 00:53", "requested_label": "", "start": "2026-10-14 00:53", "tc": "Farah Faisal", "po": "Atiqah (Ops)", "country": "Korea", "dest": "Seoul", "destination": "Seoul (urus K-ETA)", "type": "Availability", "pax": 3, "travel": "4–8 Nov 2026", "status": "Pending", "responded": "", "tat_hours": null, "tat_minutes": null, "note": "Lead nak bayar 14/10 siang", "week_end": "2026-10-16 23:59", "id": "W29", "asof": "2026-10-14 10:18"}, {"batch": "Baru", "requested": "", "requested_label": "12–13 Okt", "start": "", "tc": "Tidak dinyatakan", "po": "Fyka", "country": "Indonesia", "dest": "Bali", "destination": "Bali (swap D2/D3)", "type": "Quotation", "pax": null, "travel": "7 Nov 2026", "status": "Quoted", "responded": "2026-10-14 09:44", "tat_hours": null, "tat_minutes": null, "note": "Request asal dalam chat yang tiada; tiada tambahan harga", "week_end": "2026-10-16 23:59", "id": "W30", "asof": "2026-10-14 10:18"}, {"id": "Y01", "batch": "Carry-over", "requested": "", "tc": "Ashiqin", "po": "Ezie", "country": "Indonesia", "dest": "Jakarta-Bandung-Puncak", "destination": "Jakarta-Bandung-Puncak 6D5N", "type": "Quotation", "pax": 2, "travel": "5–10 Dis 2026", "status": "Quoted", "responded": "2026-10-10 08:14", "tat_hours": null, "tat_minutes": null, "note": "Dari minggu 1 (R16)", "week_end": "2026-10-16 23:59", "start": "2026-10-08 13:57", "asof": "2026-10-14 10:18"}, {"id": "Y02", "batch": "Carry-over", "requested": "", "tc": "Jannah", "po": "Aiman", "country": "Indonesia", "dest": "Jakarta-Bandung", "destination": "Jakarta-Bandung 8D7N", "type": "Quotation", "pax": 2, "travel": "12–19 Jan 2027", "status": "Quoted", "responded": "2026-10-12 10:17", "tat_hours": 162.4, "tat_minutes": null, "note": "Dari minggu 1 (K08). Resolution Time dikira dari follow-up 5/10 15:52 (request asal sebelum 3 Okt)", "week_end": "2026-10-16 23:59", "tat_include": true, "start": "2026-10-05 15:52", "asof": "2026-10-14 10:18"}, {"id": "Y03", "batch": "Carry-over", "requested": "", "tc": "Ashiqin", "po": "Aiman", "country": "Vietnam", "dest": "HCM", "destination": "HCM 3D2N", "type": "Quotation", "pax": 5, "travel": "25–27 Dis 2026", "status": "Quoted", "responded": "2026-10-12 10:03", "tat_hours": 83.9, "tat_minutes": null, "note": "Dari minggu 1 (R18, request 8/10 22:12); guna default 3 hari", "week_end": "2026-10-16 23:59", "tat_include": true, "start": "2026-10-08 22:12", "asof": "2026-10-14 10:18"}, {"id": "Y04", "batch": "Carry-over", "requested": "", "tc": "Ashiqin", "po": "Thania", "country": "Japan", "dest": "Tokyo", "destination": "Tokyo Basic 7D6N", "type": "Quotation", "pax": 4, "travel": "28 Dis–3 Jan", "status": "Pending", "responded": "", "tat_hours": null, "tat_minutes": null, "note": "Dari minggu 1 (R20). Thania jadi TL", "week_end": "2026-10-16 23:59", "start": "2026-10-09 20:17", "asof": "2026-10-14 10:18"}, {"id": "Y05", "batch": "Carry-over", "requested": "", "tc": "Farah Faisal", "po": "Aiman", "country": "Vietnam", "dest": "Hanoi-Sapa", "destination": "Hanoi-Sapa", "type": "Quotation", "pax": 3, "travel": "29 Okt–1 Nov 2026", "status": "Quoted", "responded": "2026-10-13 11:49", "tat_hours": 173.8, "tat_minutes": null, "note": "Dari minggu 1 (R07); boleh guna harga default", "week_end": "2026-10-16 23:59", "start": "2026-10-06 06:04", "tat_include": true, "asof": "2026-10-14 10:18"}, {"id": "Y06", "batch": "Carry-over", "requested": "", "tc": "Ashiqin", "po": "Aiman", "country": "Indonesia", "dest": "Jakarta-Bogor", "destination": "Jakarta-Bogor 3D2N", "type": "Quotation", "pax": 3, "travel": "5–7 Jul 2027", "status": "Pending", "responded": "", "tat_hours": null, "tat_minutes": null, "note": "Dari minggu 1 (R09)", "week_end": "2026-10-16 23:59", "start": "2026-10-06 15:32", "asof": "2026-10-14 10:18"}, {"id": "Y07", "batch": "Carry-over", "requested": "", "tc": "Farah Faisal", "po": "Aiman", "country": "Korea", "dest": "Seoul", "destination": "Seoul Standard 5D4N", "type": "Quotation", "pax": 3, "travel": "12–16 Nov 2026", "status": "Quoted", "responded": "2026-10-13 10:21", "tat_hours": 143.7, "tat_minutes": null, "note": "Dari minggu 1 (R13); tarikh tukar ke 6–10 Nov", "week_end": "2026-10-16 23:59", "start": "2026-10-07 10:37", "tat_include": true, "asof": "2026-10-14 10:18"}, {"id": "Y08", "batch": "Carry-over", "requested": "", "tc": "Ashiqin", "po": "Acap", "country": "Maldives", "dest": "Maldives", "destination": "Maldives Combo Island", "type": "Quotation", "pax": 5, "travel": "25–28 Dis 2026", "status": "Pending", "responded": "", "tat_hours": null, "tat_minutes": null, "note": "Dari minggu 1 (R17); semak dengan TO", "week_end": "2026-10-16 23:59", "start": "2026-10-08 16:18", "asof": "2026-10-14 10:18"}]};
+  const calcs = {}, subs = [], cache = {};
+  const get = id => {
+    if (RAW[id]) return RAW[id];
+    if (cache[id]) return cache[id];
+    const c = calcs[id]; if (!c) return null;
+    return cache[id] = c.fn(...c.inputs.map(get));
+  };
+  window.dash = {
+    colors: ['#3b6fd8','#d9822b','#2f9e5b','#9c5bd6','#d64545','#1aa3a3','#b8a12a','#c4569b'],
+    calc: (id, o) => { calcs[id] = o; },
+    data: id => { const d = get(id); return d ? {status:'ok', data:d, columns: d.length ? Object.keys(d[0]) : []} : {status:'missing', data:[]}; },
+    onData: fn => { subs.push(fn); fn(); },
+    setLink: name => { try { history.replaceState(null, '', '#' + name); } catch(e) {} },
+    params: () => ({}), setParams: () => {}, resetParams: () => {}, refresh: () => {}
+  };
+  let tm; window.addEventListener('resize', () => { clearTimeout(tm); tm = setTimeout(() => subs.forEach(f => f()), 150); });
+})();
+</script>
+</head><body><div id="dash-root">
+<style>
+.wt{font-family:var(--font-anthropic-sans);color:var(--color-fg);display:flex;flex-direction:column;gap:var(--cds-gap-lg);max-width:1200px;margin-inline:auto}
+.wt h1{font-family:var(--font-anthropic-serif);font-weight:400;font-size:var(--cds-font-size-title);margin:0}
+.wt .lead{color:var(--color-fg-muted);font-size:var(--cds-font-size-body);margin:var(--cds-gap-xs) 0 0;line-height:1.5}
+.wt .lead b{font-weight:600;color:var(--color-fg)}
+.wt .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10.5rem),1fr));gap:var(--cds-gap-md)}
+.wt .tile,.wt .card{background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-lg)}
+.wt .tile .k{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.wt .tile .v{font-family:var(--font-anthropic-serif);font-weight:400;font-size:var(--cds-font-size-title);font-variant-numeric:tabular-nums;margin:var(--cds-gap-xs) 0;min-height:1.2em}
+.wt .tile .s{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);line-height:1.4}
+.wt .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,26rem),1fr));gap:var(--cds-gap-md)}
+.wt h2{font-size:var(--cds-font-size-heading);font-weight:var(--cds-font-weight-medium);margin:0}
+.wt .note{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);margin:var(--cds-gap-xs) 0 var(--cds-gap-md);line-height:1.4}
+.wt .chart{position:relative;min-height:260px}
+.wt .legend{display:flex;gap:var(--cds-gap-md);flex-wrap:wrap;font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);margin-bottom:var(--cds-gap-sm)}
+.wt .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.wt .tip{position:absolute;pointer-events:none;background:var(--cds-surface-popover);border:1px solid var(--cds-border);border-radius:var(--cds-radius);box-shadow:var(--cds-shadow-popover);padding:var(--cds-pad-xs) var(--cds-pad-sm);font-size:var(--cds-font-size-caption);display:none;white-space:nowrap;z-index:2}
+.wt .tip .h{color:var(--cds-text-secondary);margin-bottom:2px}
+.wt .tbox{max-height:520px;overflow:auto}
+.wt .destv .tbox{max-height:none;overflow:visible}
+.wt table{width:100%;border-collapse:collapse;font-size:var(--cds-font-size-caption);font-variant-numeric:tabular-nums}
+.wt th{position:sticky;top:0;background:var(--color-panel);text-align:left;font-weight:var(--cds-font-weight-medium);color:var(--color-fg-muted);padding:6px 8px;border-bottom:1px solid var(--color-border-line);white-space:nowrap;cursor:pointer}
+.wt td{padding:6px 8px;border-bottom:1px solid var(--color-border-line);vertical-align:top}
+.wt td.num,.wt th.num{text-align:right}
+.wt .pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:var(--cds-font-size-caption);border:1px solid var(--color-border-line);white-space:nowrap}
+.wt .p-Pending{color:var(--color-warn)}
+.wt .p-Quoted,.wt .p-Answered{color:var(--color-ok)}
+.wt .p-match{color:var(--color-ok);font-weight:600}
+.wt .muted{color:var(--color-fg-muted)}
+.wt .ctrl{display:flex;gap:var(--cds-gap-sm);flex-wrap:wrap;align-items:center;margin-bottom:var(--cds-gap-sm)}
+.wt .ctrl input{flex:1;min-width:10rem;padding:6px 10px;border:1px solid var(--color-border-line);border-radius:var(--cds-radius);background:var(--color-bg);color:var(--color-fg);font:inherit;font-size:var(--cds-font-size-caption)}
+.wt .ctrl button{padding:5px 10px;border:1px solid var(--color-border-line);border-radius:999px;background:transparent;color:var(--color-fg-muted);font:inherit;font-size:var(--cds-font-size-caption);cursor:pointer}
+.wt .ctrl button.on{background:var(--color-fg);color:var(--color-bg);border-color:var(--color-fg)}
+.wt .bar{height:8px;border-radius:4px;background:var(--cds-chart-muted);position:relative;min-width:60px}
+.wt .bar span{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.wt [data-dash-source-state=empty]{color:transparent}
+.wt [data-dash-source-state=refreshing]{opacity:.5;transition:opacity var(--cds-dur-slow)}
+.wt .fail{display:flex;align-items:center;justify-content:center;gap:6px;min-height:inherit;color:var(--color-fg-muted);font-size:var(--cds-font-size-caption)}
+.wt .fail:before{content:"";width:.375rem;height:.375rem;border-radius:50%;background:var(--color-bad)}
+@media (max-width:640px){.wt .hide-n{display:none}}
+.wt .sec{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 calc(-1 * var(--cds-gap-sm))}
+.wt .def{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);background:var(--color-bg);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-sm) var(--cds-pad-md);line-height:1.5}
+.wt .tabs{display:flex;gap:var(--cds-gap-sm);flex-wrap:wrap;border-bottom:1px solid var(--color-border-line)}
+.wt .tabs button{padding:8px 14px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--color-fg-muted);font:inherit;font-size:var(--cds-font-size-body);cursor:pointer;margin-bottom:-1px}
+.wt .tabs button.on{color:var(--color-fg);border-bottom-color:var(--color-fg);font-weight:var(--cds-font-weight-medium)}
+.wt .week{display:flex;flex-direction:column;gap:var(--cds-gap-lg)}
+.wt .week[hidden]{display:none}
+.wt table thead th{background:color-mix(in srgb,var(--color-fg) 5%,var(--color-panel));border-bottom:1px solid var(--color-border-line)}
+.wt table thead th:first-child{border-top-left-radius:6px}
+.wt table thead th:last-child{border-top-right-radius:6px}
+.wt table td{border-bottom:1px solid color-mix(in srgb,var(--color-border-line) 60%,transparent);vertical-align:middle}
+.wt table tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--color-fg) 2%,transparent)}
+.wt table tbody tr:hover td{background:color-mix(in srgb,var(--color-fg) 5%,transparent)}
+.wt .chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,var(--color-fg) 6%,transparent);color:var(--color-fg);white-space:nowrap;line-height:1.5}
+.wt .chip i{display:none}
+.wt .chips{display:flex;flex-wrap:wrap;gap:4px}
+.wt .po-name{font-weight:var(--cds-font-weight-medium)}
+.wt .n-zero{color:var(--color-fg-muted);opacity:.55}
+.wt .n-ok{color:var(--color-ok);font-weight:600}
+.wt .n-warn{color:var(--color-warn);font-weight:600}
+.wt .rt{display:inline-block;min-width:3.2em;white-space:nowrap;padding:1px 8px;border-radius:6px;text-align:right;font-weight:600;color:var(--rt);background:color-mix(in srgb,var(--rt) 13%,transparent)}
+.wt .pill{border:0;font-weight:600}
+.wt .pill.p-Pending{color:var(--color-warn);background:color-mix(in srgb,var(--color-warn) 14%,transparent)}
+.wt .pill.p-Quoted,.wt .pill.p-Answered{color:var(--color-ok);background:color-mix(in srgb,var(--color-ok) 14%,transparent)}
+.wt .rate{display:flex;align-items:center;gap:8px}
+.wt .rate .bar{flex:1}
+.wt .rtkey{display:flex;gap:var(--cds-gap-sm);flex-wrap:wrap;margin-top:var(--cds-gap-xs)}
+.wt .tl{position:absolute;top:var(--cds-pad-md);right:var(--cds-pad-md);display:flex;flex-direction:column;gap:3px;padding:4px;border-radius:999px;background:color-mix(in srgb,var(--color-fg) 82%,var(--color-bg))}
+.wt{--tl-red:#e5484d;--tl-amber:#e9a800;--tl-green:#2f9e5b}
+.wt .tl span{width:10px;height:10px;border-radius:50%;opacity:.3}
+.wt .tl span[data-k=red]{background:var(--tl-red);color:var(--tl-red)}
+.wt .tl span[data-k=amber]{background:var(--tl-amber);color:var(--tl-amber)}
+.wt .tl span[data-k=green]{background:var(--tl-green);color:var(--tl-green)}
+.wt .tl span.lit{opacity:1;box-shadow:0 0 8px currentColor}
+.wt .pendsum{margin-bottom:var(--cds-gap-sm)}
+.wt .pend-chip{font-weight:var(--cds-font-weight-medium)}
+.wt .pend-chip.hot{background:color-mix(in srgb,var(--tl-red) 14%,transparent);color:var(--tl-red)}
+.wt .pendTable tr.grp td{border-top:2px solid var(--color-border-line)}
+.wt .pendTable tbody tr:first-child td{border-top:0}
+</style>
+
+<div class="wt">
+  <header id="top">
+    <h1 id="pageTitle">Prod Request Tracking</h1>
+    <p class="lead" id="lead"><span class="dash-skeleton">—</span></p>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist">
+    <button type="button" role="tab" data-w="w1">Week 1 · 3–9 Okt</button>
+    <button type="button" role="tab" data-w="w2">Week 2 · 10–14 Okt</button>
+  </nav>
+
+  <p class="def"><b>Resolution Time</b> = berapa lama dari TC post request dalam group sampai PO / ops balas dengan harga atau jawapan. Untuk quotation dikira dalam jam, untuk availability dalam minit.<span class="rtkey"><span class="rt" style="--rt:var(--color-ok)">≤ 24 jam / ≤ 60 minit</span><span class="rt" style="--rt:var(--color-warn)">≤ 72 jam / ≤ 4 jam</span><span class="rt" style="--rt:var(--color-bad)">lebih lama</span></span></p>
+
+  <div id="weeks"></div>
+</div>
+
+<script>
+const regWeek = (w, ds) => {
+  dash.calc('kpi_' + w, {
+    title: 'Headline figures (' + w.toUpperCase() + ')',
+    description: 'Quotation dan availability minggu ni diasingkan; rate, median Resolution Time, pending.',
+    inputs: [ds],
+    fn: (requests) => {
+      const median = a => { const s = a.slice().sort((x,y)=>x-y), n = s.length; return n ? (n % 2 ? s[(n-1)/2] : (s[n/2-1] + s[n/2]) / 2) : null; };
+      const nw = requests.filter(r => r.batch === 'Baru');
+      const q = nw.filter(r => r.type === 'Quotation');
+      const av = nw.filter(r => r.type === 'Availability');
+      const qin = q.filter(r => r.status === 'Quoted' && r.responded && r.responded <= r.week_end);
+      const m = median(q.filter(r => r.status === 'Quoted' && r.tat_hours != null && r.tat_hours !== '').map(r => Number(r.tat_hours)));
+      const avAns = av.filter(r => r.status === 'Answered');
+      const am = median(avAns.map(r => Number(r.tat_minutes)));
+      const rate = q.length ? qin.length / q.length : 0;
+      const pend = requests.filter(r => r.type === 'Quotation' && r.status === 'Pending');
+      const byPo = {}; pend.forEach(r => { byPo[r.po] = (byPo[r.po] || 0) + 1; });
+      const top = Object.entries(byPo).sort((a,b) => b[1]-a[1])[0];
+      return [{
+        quote_req: q.length, quoted_in_window: qin.length, quote_rate: rate, quote_rate_txt: Math.round(rate*100) + '%',
+        median_tat_h: m, median_tat_txt: m == null ? '—' : Math.round(m) + ' jam',
+        pending: pend.length, top_pending_po: top ? top[0] : '—', top_pending_n: top ? top[1] : 0,
+        carry_quoted: requests.filter(r => r.batch === 'Carry-over' && r.status === 'Quoted').length,
+        avail_n: av.length, avail_answered: avAns.length, avail_answered_txt: avAns.length + ' / ' + av.length,
+        avail_median_min: am, avail_median_txt: am == null ? '—' : Math.round(am) + ' minit'
+      }];
+    }
+  });
+  dash.calc('by_dest_' + w, {
+    title: 'Volume by destination (' + w.toUpperCase() + ')',
+    description: 'Request baru per destinasi: quotation, check availability, quoted, pending dan median Resolution Time (jam).',
+    inputs: [ds],
+    fn: (requests) => {
+      const m = new Map();
+      requests.filter(r => r.batch === 'Baru').forEach(r => {
+        if (!m.has(r.dest)) m.set(r.dest, {dest: r.dest, total: 0, avail: 0, quoted: 0, pending: 0, tats: []});
+        const o = m.get(r.dest);
+        if (r.type === 'Availability') { o.avail++; return; }
+        o.total++;
+        if (r.status === 'Quoted') o.quoted++;
+        if (r.status === 'Pending') o.pending++;
+        if (r.tat_hours != null && r.tat_hours !== '') o.tats.push(Number(r.tat_hours));
+      });
+      return [...m.values()].map(o => {
+        const s = o.tats.sort((a,b)=>a-b), n = s.length;
+        const md = n ? (n % 2 ? s[(n-1)/2] : (s[n/2-1] + s[n/2]) / 2) : null;
+        return {dest: o.dest, total: o.total, avail: o.avail, quoted: o.quoted, pending: o.pending, median_tat_h: md == null ? null : Math.round(md*10)/10};
+      }).sort((a,b) => (b.total + b.avail) - (a.total + a.avail) || a.dest.localeCompare(b.dest));
+    }
+  });
+  dash.calc('pending_' + w, {
+    title: 'Pending by PO (' + w.toUpperCase() + ')',
+    description: 'Request yang masih pending ikut PO (tidak termasuk ops), dengan umur dalam jam dari request / tag ke PO sampai masa data terkini.',
+    inputs: [ds],
+    fn: (requests) => {
+      const notPO = ['Farah Ilyana', 'Iwan (Ops)', 'Atiqah (Ops)'];
+      const t = s => Date.parse(String(s).replace(' ', 'T'));
+      const rows = requests.filter(r => r.status === 'Pending' && !notPO.includes(r.po)).map(r => ({
+        id: r.id, po: r.po, tc: r.tc, dest: r.dest, destination: r.destination, batch: r.batch, start: r.start || '',
+        age_h: r.start ? Math.round((t(r.asof) - t(r.start)) / 36e5 * 10) / 10 : null, note: r.note
+      }));
+      const cnt = {}; rows.forEach(r => { cnt[r.po] = (cnt[r.po] || 0) + 1; });
+      rows.forEach(r => { r.po_pending = cnt[r.po]; });
+      return rows.sort((a,b) => (b.po_pending - a.po_pending) || a.po.localeCompare(b.po) || ((b.age_h ?? -1) - (a.age_h ?? -1)));
+    }
+  });
+  dash.calc('by_po_' + w, {
+    title: 'Volume by PO (' + w.toUpperCase() + ')',
+    description: 'Per PO (tidak termasuk ops Farah Ilyana & Iwan): quotation (baru + carry-over), check availability, destinasi, quoted, pending, quote rate dan median Resolution Time (jam).',
+    inputs: [ds],
+    fn: (requests) => {
+      const m = new Map();
+      const notPO = ['Farah Ilyana', 'Iwan (Ops)', 'Atiqah (Ops)'];
+      requests.filter(r => !notPO.includes(r.po)).forEach(r => {
+        if (!m.has(r.po)) m.set(r.po, {po: r.po, total: 0, avail: 0, quoted: 0, pending: 0, tats: [], dest: new Map()});
+        const o = m.get(r.po);
+        o.dest.set(r.dest, (o.dest.get(r.dest) || 0) + 1);
+        if (r.type === 'Availability') { o.avail++; return; }
+        o.total++;
+        if (r.status === 'Quoted') o.quoted++;
+        if (r.status === 'Pending') o.pending++;
+        if ((r.batch === 'Baru' || r.tat_include) && r.tat_hours != null && r.tat_hours !== '') o.tats.push(Number(r.tat_hours));
+      });
+      return [...m.values()].map(o => {
+        const s = o.tats.sort((a,b)=>a-b), n = s.length;
+        const md = n ? (n % 2 ? s[(n-1)/2] : (s[n/2-1] + s[n/2]) / 2) : null;
+        const destinations = [...o.dest.entries()].sort((a,b) => b[1]-a[1]).map(([c,k]) => k > 1 ? c + ' (' + k + ')' : c).join(', ');
+        return {po: o.po, destinations, total: o.total, avail: o.avail, quoted: o.quoted, pending: o.pending,
+          quote_rate: o.total ? o.quoted / o.total : null, median_tat_h: md == null ? null : Math.round(md*10)/10};
+      }).sort((a,b) => (b.total + b.avail) - (a.total + a.avail));
+    }
+  });
+};
+regWeek('w1', 'requests');
+regWeek('w2', 'requests_w2');
+</script>
+
+<script>
+(function(){
+  const WEEKS = [
+    {w: 'w1', ds: 'requests', title: 'Week 1 Prod Request Tracking', range: '3 Okt (Sabtu) – 9 Okt (Jumaat)', short: '3–9 Okt',
+     lead: 'Sabtu 3 – Jumaat 9 Okt 2026. ', asof: 'setakat 11 Okt', asofShort: '11 Okt 8:30 malam', before: 'Sebelum 3 Okt', within: 'dapat harga sebelum Jumaat tamat',
+     carryNote: 'Carry-over tiada Resolution Time sebab request asal sebelum 3 Okt (kecuali takeover K06).', carryTile: 'Request sebelum 3 Okt, dijawab minggu ni'},
+    {w: 'w2', ds: 'requests_w2', title: 'Week 2 Prod Request Tracking', range: '10 Okt (Sabtu) – 14 Okt (Rabu), 10:18 pagi', short: '10–14 Okt',
+     lead: 'Sabtu 10 Okt – Rabu 14 Okt 2026, 10:18 pagi (chat 12 Okt 11:23 – 13 Okt 9:51 tiada dalam data). ', asof: 'setakat 14 Okt 10:18 pg', asofShort: '14 Okt 10:18 pagi', before: 'Dari minggu 1', within: 'dah dapat harga setakat ni',
+     carryNote: 'Carry-over = request minggu 1 yang dijawab minggu ni atau masih pending.', carryTile: 'Request minggu 1, dijawab minggu ni'}
+  ];
+  const MO = ['Jan','Feb','Mac','Apr','Mei','Jun','Jul','Ogo','Sep','Okt','Nov','Dis'];
+  const fdt = s => { if (!s) return ''; const [d,t] = String(s).split(' '); const [y,mo,da] = d.split('-'); return (+da) + ' ' + MO[+mo-1] + (t ? ' ' + t : ''); };
+  const pct = d3.format('.0%');
+  const mk = tr => (t, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = t == null ? '' : t; tr.appendChild(c); return c; };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  const tpl = c => {
+    const K = 'kpi_' + c.w;
+    const f = (field, cls) => `<span class="${cls || ''}" data-source="${K}" data-field="${field}" data-row="0">—</span>`;
+    return `
+    <h3 class="sec">Quotation</h3>
+    <section class="tiles">
+      <div class="tile"><div class="k">Request quotation baru</div><div class="v dash-skeleton" data-source="${K}" data-field="quote_req" data-row="0">—</div><div class="s">Dipost ${esc(c.short)}, minta harga / PR</div></div>
+      <div class="tile"><div class="k">Quotation rate</div><div class="v dash-skeleton" data-source="${K}" data-field="quote_rate_txt" data-row="0">—</div><div class="s">${f('quoted_in_window')} daripada ${f('quote_req')} ${esc(c.within)}</div></div>
+      <div class="tile"><div class="k">Resolution Time quote (median)</div><div class="v dash-skeleton" data-source="${K}" data-field="median_tat_txt" data-row="0">—</div><div class="s">Request baru yang dah di-quote</div></div>
+      <div class="tile"><div class="k">Masih pending</div><div class="v dash-skeleton" data-source="${K}" data-field="pending" data-row="0">—</div><div class="s">Baru + carry-over, tiada harga ${esc(c.asof)}</div></div>
+      <div class="tile"><div class="k">Carry-over di-quote</div><div class="v dash-skeleton" data-source="${K}" data-field="carry_quoted" data-row="0">—</div><div class="s">${esc(c.carryTile)}</div></div>
+    </section>
+
+    <section>
+      <div class="card destv" id="destv-${c.w}">
+        <h2>Volume by Destinasi · ${esc(c.range)}</h2>
+        <p class="note">Request baru ${esc(c.short)} ikut destinasi (tanpa carry-over): quotation dan check availability. Resolution Time = median jam request quotation baru ke quote.</p>
+        <div class="tbox">
+          <table class="destTable" data-source="by_dest_${c.w}" data-row-key="dest">
+            <thead><tr>
+              <th data-field="dest">Destinasi</th><th data-field="total" class="num">Quotation</th><th data-field="avail" class="num">Availability</th>
+              <th data-field="quoted" class="num">Quoted</th><th data-field="pending" class="num">Pending</th><th data-field="median_tat_h" class="num">Resolution Time (jam)</th>
+            </tr></thead><tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="card" id="po-${c.w}">
+        <h2>Volume ikut PO · ${esc(c.range)}</h2>
+        <p class="note">Request yang di-tag kepada PO: quotation (baru + carry-over) dan check availability. Ops (Farah Ilyana, Iwan, Atiqah) tidak dikira. Quote rate &amp; Resolution Time dikira untuk quotation sahaja.</p>
+        <div class="tbox">
+          <table class="poTable" data-source="by_po_${c.w}" data-row-key="po">
+            <thead><tr>
+              <th data-field="po">PO</th><th data-field="destinations">Destinasi</th><th data-field="total" class="num">Quotation</th><th data-field="avail" class="num">Availability</th>
+              <th data-field="quoted" class="num">Quoted</th><th data-field="pending" class="num">Pending</th><th data-field="quote_rate">Quote rate</th><th data-field="median_tat_h" class="num">Resolution Time (jam)</th>
+            </tr></thead><tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="card" id="pend-${c.w}">
+        <h2>Pending ikut PO · ${esc(c.range)}</h2>
+        <p class="note">Request yang belum dapat harga, dikumpul ikut PO. Umur = jam dari request (atau tag ke PO) sampai ${esc(c.asofShort)}. Ops tidak dikira.</p>
+        <div class="pendsum chips"></div>
+        <div class="tbox">
+          <table class="pendTable" data-source="pending_${c.w}" data-row-key="id">
+            <thead><tr>
+              <th data-field="po">PO</th><th data-field="id">ID</th><th data-field="tc">TC</th><th data-field="dest">Destinasi</th>
+              <th data-field="destination" class="hide-n">Pakej</th><th data-field="start" class="hide-n">Sejak</th><th data-field="age_h" class="num">Umur (jam)</th><th data-field="note" class="hide-n">Status terkini</th>
+            </tr></thead><tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="reqs-${c.w}">
+      <h2>Senarai request quotation</h2>
+      <p class="note">${esc(c.carryNote)}</p>
+      <div class="ctrl reqCtrl">
+        <input class="reqQ" type="search" placeholder="Cari destinasi, TC, PO…">
+        <button data-f="all" class="on">Semua</button><button data-f="Pending">Pending</button><button data-f="Quoted">Quoted</button><button data-f="Carry-over">Carry-over</button>
+      </div>
+      <div class="tbox">
+        <table class="reqTable" data-source="${c.ds}" data-row-key="id">
+          <thead><tr>
+            <th data-field="id">ID</th><th data-field="requested">Request</th><th data-field="tc">TC</th><th data-field="po">PO</th>
+            <th data-field="dest">Destinasi</th><th data-field="destination" class="hide-n">Pakej</th>
+            <th data-field="pax" class="num hide-n">Pax</th><th data-field="status">Status</th><th data-field="tat_hours" class="num">Resolution Time (jam)</th><th data-field="note" class="hide-n">Catatan</th>
+          </tr></thead><tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <h3 class="sec">Check availability</h3>
+    <section class="tiles">
+      <div class="tile"><div class="k">Check availability</div><div class="v dash-skeleton" data-source="${K}" data-field="avail_n" data-row="0">—</div><div class="s">Dipost ${esc(c.short)}</div></div>
+      <div class="tile"><div class="k">Dijawab</div><div class="v dash-skeleton" data-source="${K}" data-field="avail_answered_txt" data-row="0">—</div><div class="s">Dapat jawapan "boleh / masuk"</div></div>
+      <div class="tile"><div class="k">Resolution Time jawapan (median)</div><div class="v dash-skeleton" data-source="${K}" data-field="avail_median_txt" data-row="0">—</div><div class="s">Dari request ke jawapan</div></div>
+    </section>
+
+    <section class="card" id="avail-${c.w}">
+      <h2>Senarai check availability</h2>
+      <p class="note">Request yang tanya slot / tarikh boleh masuk, bukan harga.</p>
+      <div class="tbox">
+        <table class="avTable" data-source="${c.ds}" data-row-key="id">
+          <thead><tr>
+            <th data-field="id">ID</th><th data-field="requested">Request</th><th data-field="tc">TC</th><th data-field="po">Dijawab oleh</th>
+            <th data-field="dest">Destinasi</th><th data-field="destination" class="hide-n">Pakej</th><th data-field="pax" class="num hide-n">Pax</th>
+            <th data-field="travel" class="hide-n">Tarikh travel</th><th data-field="status">Status</th><th data-field="tat_minutes" class="num">Resolution Time (minit)</th><th data-field="note" class="hide-n">Catatan</th>
+          </tr></thead><tbody></tbody>
+        </table>
+      </div>
+    </section>`;
+  };
+
+  const host = document.getElementById('weeks');
+  const ST = {};
+  WEEKS.forEach(c => {
+    const sec = document.createElement('div'); sec.className = 'week'; sec.id = c.w; sec.innerHTML = tpl(c); host.appendChild(sec);
+    ST[c.w] = {f: 'all', q: '', sort: null, dir: 1};
+  });
+
+  let cur = (location.hash.slice(1) === 'w1' || location.hash.slice(1) === 'w2') ? location.hash.slice(1) : 'w2';
+  const conf = () => WEEKS.find(c => c.w === cur);
+
+  function kpi(c){
+    const K = 'kpi_' + c.w, k = dash.data(K), root = document.getElementById(c.w);
+    root.querySelectorAll('[data-source="' + K + '"]').forEach(el => {
+      if (k.status !== 'ok' || !k.data.length) return;
+      el.classList.remove('dash-skeleton');
+      const v = k.data[0][el.dataset.field]; el.textContent = v == null ? '—' : String(v);
+    });
+    if (k.status === 'ok' && k.data.length) {
+      const r = k.data[0];
+      const band = (n, a, b, hiGood) => n == null ? null : hiGood ? (n < a ? 'var(--tl-red)' : n < b ? 'var(--tl-amber)' : 'var(--tl-green)') : (n <= a ? 'var(--tl-green)' : n <= b ? 'var(--tl-amber)' : 'var(--tl-red)');
+      const paint = (field, col) => root.querySelectorAll('.v[data-field="' + field + '"]').forEach(el => {
+        el.style.color = col || ''; const tile = el.closest('.tile');
+        if (tile) {
+          tile.style.borderColor = col ? 'color-mix(in srgb, ' + col + ' 45%, var(--color-border-line))' : ''; tile.style.background = col ? 'color-mix(in srgb, ' + col + ' 6%, var(--color-panel))' : '';
+          let tl = tile.querySelector('.tl');
+          if (!tl) { tl = document.createElement('div'); tl.className = 'tl'; tl.setAttribute('aria-hidden', 'true'); ['red','amber','green'].forEach(k => { const d = document.createElement('span'); d.dataset.k = k; tl.appendChild(d); }); tile.style.position = 'relative'; tile.style.paddingRight = '2.75rem'; tile.appendChild(tl); }
+          tl.querySelectorAll('span').forEach(d => d.classList.toggle('lit', col === 'var(--tl-' + d.dataset.k + ')'));
+        }
+      });
+      paint('quote_rate_txt', band(r.quote_rate, 0.34, 0.67, true));
+      paint('median_tat_txt', band(r.median_tat_h, 24, 72, false));
+      paint('avail_median_txt', band(r.avail_median_min, 60, 240, false));
+    }
+  }
+
+  function lead(){
+    const c = conf(), K = 'kpi_' + c.w, k = dash.data(K), el = document.getElementById('lead');
+    document.getElementById('pageTitle').textContent = c.title;
+    if (k.status !== 'ok' || !k.data.length) return;
+    const r = k.data[0]; el.textContent = '';
+    const add = (t, f) => { if (f) { const b = document.createElement('b'); b.dataset.source = K; b.dataset.field = f; b.dataset.row = '0'; b.textContent = String(r[f]); el.appendChild(b); } else el.appendChild(document.createTextNode(t)); };
+    add(c.lead); add('', 'quote_rate_txt'); add(' request quotation baru dah dapat harga (Resolution Time median '); add('', 'median_tat_txt');
+    add('). '); add('', 'pending'); add(' masih pending, paling banyak di bawah '); add('', 'top_pending_po'); add(' ('); add('', 'top_pending_n');
+    add('). Check availability dijawab dalam '); add('', 'avail_median_txt'); add(' (median).');
+  }
+
+  const COUNTRY_ORDER = ['Japan','China','Vietnam','Indonesia','Korea','Turkey','Malaysia','Maldives','Europe','Thailand','Balkan','Tidak dinyatakan'];
+  const ccol = c => { const i = COUNTRY_ORDER.indexOf(c); return i < 0 || c === 'Tidak dinyatakan' ? 'var(--cds-chart-muted)' : dash.colors[i % dash.colors.length]; };
+  const destCountry = ds => { const m = {}; const s = dash.data(ds); if (s.status === 'ok') s.data.forEach(r => { m[r.dest] = r.country; }); return m; };
+  const chip = (txt, color, extra) => { const s = document.createElement('span'); s.className = 'chip'; s.style.setProperty('--c', color); const i = document.createElement('i'); s.appendChild(i); s.appendChild(document.createTextNode(txt + (extra ? ' ' + extra : ''))); return s; };
+  const numCell = (td, v, kind) => { const c = td(v, 'num'); if (!Number(v)) c.classList.add('n-zero'); else if (kind) c.classList.add('n-' + kind); return c; };
+  const rtCell = (tr, v, unit) => {
+    const c = document.createElement('td'); c.className = 'num'; tr.appendChild(c);
+    if (v == null || v === '' || v === '—') { c.textContent = '—'; c.classList.add('n-zero'); return c; }
+    const n = Number(v), lim = unit === 'm' ? [60, 240] : [24, 72];
+    const s = document.createElement('span'); s.className = 'rt';
+    s.style.setProperty('--rt', n <= lim[0] ? 'var(--color-ok)' : n <= lim[1] ? 'var(--color-warn)' : 'var(--color-bad)');
+    s.textContent = String(v); c.appendChild(s); return c;
+  };
+  const pillCell = (tr, status) => { const sc = document.createElement('td'); const p = document.createElement('span'); p.className = 'pill p-' + status; p.textContent = status; sc.appendChild(p); tr.appendChild(sc); };
+
+  function destTable(c){
+    const s = dash.data('by_dest_' + c.w), tb = document.querySelector('#' + c.w + ' .destTable tbody');
+    tb.innerHTML = ''; if (s.status !== 'ok') return;
+    const dc = destCountry(c.ds);
+    s.data.forEach(r => {
+      const tr = document.createElement('tr'), td = mk(tr);
+      const d = document.createElement('td'); d.appendChild(chip(r.dest, ccol(dc[r.dest]))); tr.appendChild(d);
+      numCell(td, r.total); numCell(td, r.avail); numCell(td, r.quoted, 'ok'); numCell(td, r.pending, 'warn');
+      rtCell(tr, r.median_tat_h, 'h');
+      tb.appendChild(tr);
+    });
+  }
+
+  function poTable(c){
+    const s = dash.data('by_po_' + c.w), tb = document.querySelector('#' + c.w + ' .poTable tbody');
+    tb.innerHTML = ''; if (s.status !== 'ok') return;
+    const dc = destCountry(c.ds);
+    s.data.forEach(r => {
+      const tr = document.createElement('tr'), td = mk(tr);
+      const pc = td(r.po); pc.classList.add('po-name');
+      const d = document.createElement('td'); const dw = document.createElement('div'); dw.className = 'chips'; d.appendChild(dw);
+      String(r.destinations || '').split(', ').filter(Boolean).forEach(x => { const m = x.match(/^(.*?)(?: \((\d+)\))?$/); dw.appendChild(chip(m[1], ccol(dc[m[1]]), m[2] ? '×' + m[2] : '')); });
+      tr.appendChild(d);
+      numCell(td, r.total); numCell(td, r.avail); numCell(td, r.quoted, 'ok'); numCell(td, r.pending, 'warn');
+      const cell = document.createElement('td');
+      if (r.quote_rate == null) { cell.textContent = '—'; cell.className = 'n-zero'; tr.appendChild(cell); }
+      else {
+        const w = document.createElement('div'); w.className = 'rate';
+        const b = document.createElement('div'); b.className = 'bar';
+        const f = document.createElement('span'); f.style.width = (r.quote_rate * 100) + '%'; f.style.background = r.quote_rate < 0.34 ? 'var(--color-bad)' : r.quote_rate < 0.67 ? 'var(--color-warn)' : 'var(--color-ok)';
+        b.appendChild(f); const t = document.createElement('span'); t.textContent = pct(r.quote_rate);
+        w.appendChild(b); w.appendChild(t); cell.appendChild(w); tr.appendChild(cell);
+      }
+      rtCell(tr, r.median_tat_h, 'h');
+      tb.appendChild(tr);
+    });
+  }
+
+  function reqTable(c){
+    const st = ST[c.w], s = dash.data(c.ds), tb = document.querySelector('#' + c.w + ' .reqTable tbody');
+    tb.innerHTML = ''; if (s.status !== 'ok') return;
+    let rows = s.data.filter(r => r.type === 'Quotation');
+    if (st.f === 'Pending' || st.f === 'Quoted') rows = rows.filter(r => r.status === st.f);
+    else if (st.f === 'Carry-over') rows = rows.filter(r => r.batch === 'Carry-over');
+    if (st.q) { const q = st.q.toLowerCase(); rows = rows.filter(r => Object.values(r).join(' ').toLowerCase().includes(q)); }
+    if (st.sort) rows.sort((a,b) => { const x = a[st.sort], y = b[st.sort]; const nx = st.sort === 'pax' || st.sort === 'tat_hours'; return (nx ? ((x ?? -1) - (y ?? -1)) : String(x ?? '').localeCompare(String(y ?? ''))) * st.dir; });
+    rows.forEach(r => {
+      const tr = document.createElement('tr'), td = mk(tr);
+      td(r.id, 'muted'); const rq = td(r.requested ? fdt(r.requested) : (r.requested_label || c.before)); if (!r.requested) rq.classList.add('muted');
+      td(r.tc); td(r.po, 'po-name');
+      const d = document.createElement('td'); d.appendChild(chip(r.dest, ccol(r.country))); tr.appendChild(d);
+      td(r.destination, 'hide-n'); td(r.pax, 'num hide-n');
+      pillCell(tr, r.status);
+      rtCell(tr, r.tat_hours, 'h'); td(r.note, 'hide-n muted');
+      tb.appendChild(tr);
+    });
+  }
+
+  function avTable(c){
+    const s = dash.data(c.ds), tb = document.querySelector('#' + c.w + ' .avTable tbody');
+    tb.innerHTML = ''; if (s.status !== 'ok') return;
+    s.data.filter(r => r.type === 'Availability').forEach(r => {
+      const tr = document.createElement('tr'), td = mk(tr);
+      td(r.id, 'muted'); td(fdt(r.requested)); td(r.tc); td(r.po, 'po-name');
+      const d = document.createElement('td'); d.appendChild(chip(r.dest, ccol(r.country))); tr.appendChild(d);
+      td(r.destination, 'hide-n'); td(r.pax, 'num hide-n'); td(r.travel, 'hide-n');
+      pillCell(tr, r.status);
+      rtCell(tr, r.tat_minutes, 'm');
+      td(r.note, 'hide-n muted');
+      tb.appendChild(tr);
+    });
+  }
+
+  function pendTable(c){
+    const s = dash.data('pending_' + c.w), root = document.getElementById(c.w), tb = root.querySelector('.pendTable tbody'), sum = root.querySelector('.pendsum');
+    tb.innerHTML = ''; sum.innerHTML = ''; if (s.status !== 'ok') return;
+    const seen = {};
+    s.data.forEach(r => {
+      if (!seen[r.po]) { seen[r.po] = 1; const ch = chip(r.po, '', '· ' + r.po_pending); ch.classList.add('pend-chip'); if (r.po_pending >= 4) ch.classList.add('hot'); sum.appendChild(ch); }
+    });
+    let last = null;
+    s.data.forEach(r => {
+      const tr = document.createElement('tr'), td = mk(tr);
+      if (r.po !== last) { tr.classList.add('grp'); td(r.po, 'po-name'); last = r.po; } else td('');
+      td(r.id, 'muted'); td(r.tc);
+      const d = document.createElement('td'); d.appendChild(chip(r.dest, '')); tr.appendChild(d);
+      td(r.destination, 'hide-n'); const st = td(r.start ? fdt(r.start) : '—', 'hide-n'); if (!r.start) st.classList.add('n-zero');
+      rtCell(tr, r.age_h, 'h'); td(r.note, 'hide-n muted');
+      tb.appendChild(tr);
+    });
+  }
+
+  function showTab(){
+    WEEKS.forEach(c => { document.getElementById(c.w).hidden = c.w !== cur; });
+    document.querySelectorAll('#tabs button').forEach(b => { const on = b.dataset.w === cur; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+    lead();
+  }
+
+  document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => { cur = b.dataset.w; showTab(); dash.setLink(cur); }));
+
+  WEEKS.forEach(c => {
+    const root = document.getElementById(c.w), st = ST[c.w];
+    root.querySelectorAll('.reqCtrl button').forEach(b => b.addEventListener('click', () => {
+      root.querySelectorAll('.reqCtrl button').forEach(x => x.classList.toggle('on', x === b)); st.f = b.dataset.f; reqTable(c);
+    }));
+    root.querySelector('.reqQ').addEventListener('input', e => { st.q = e.target.value; reqTable(c); });
+    root.querySelectorAll('.reqTable th').forEach(th => th.addEventListener('click', () => {
+      const f = th.dataset.field; st.dir = st.sort === f ? -st.dir : 1; st.sort = f;
+      root.querySelectorAll('.reqTable th').forEach(x => x.removeAttribute('aria-sort'));
+      th.setAttribute('aria-sort', st.dir > 0 ? 'ascending' : 'descending'); reqTable(c);
+    }));
+  });
+
+  showTab();
+  dash.onData(() => { WEEKS.forEach(c => { kpi(c); destTable(c); poTable(c); pendTable(c); reqTable(c); avTable(c); }); lead(); });
+})();
+</script>
+
+<p style="text-align:center;font:12px var(--font-anthropic-sans);color:var(--color-fg-muted);margin-top:32px">Data disusun daripada chat ATT22 (Telegram). Dikemas kini 14 Okt 2026, 10:18 pagi.</p>
+</div></body></html>
